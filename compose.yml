@@ -1,0 +1,46 @@
+version: "3.8"
+services:
+  car_backend:
+    container_name: car_backend
+    build: &backend_build
+      context: .
+      dockerfile: ./Dockerfile
+    restart: always
+    depends_on:
+      - car_db
+    ports:
+      - "8000:8000"
+    networks:
+      car_network:
+        aliases:
+          - car_backend
+    environment:
+      HOST: car_db
+      PORT: 5432
+      NAME: car
+      USERNAME: postgres
+      PASSWORD: masterkey
+    command: sh -c 'alembic upgrade head && poetry run python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload'
+
+  car_db:
+    container_name: car_db
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "masterkey"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "car"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      car_network:
+        aliases:
+          - car_db
+
+networks:
+  car_network:
+    name: car_network
+
+volumes:
+  pgdata:
